@@ -432,25 +432,27 @@ class TMXSerializer(object):
             elif subelem.tag == 'data':
                 assert data_set is False
                 data = subelem.text.encode('ascii')
-                encoding = subelem.attrib.pop('encoding')
-                if encoding == 'base64':
-                    data = base64.b64decode(data)
-                    layer.encoding = 'base64'
-                else:
-                    raise ValueError('Bad encoding %s' % encoding)
-                compression = subelem.attrib.pop('compression', None)
-                if compression == 'gzip':
-                    filelike = io.BytesIO(data)
-                    gzfile = gzip.GzipFile(fileobj=filelike)
-                    data = gzfile.read()
-                    gzfile.close()
-                    layer.compression = 'gzip'
-                elif compression == 'zlib':
-                    data = zlib.decompress(data)
-                    layer.compression = 'zlib'
-                elif compression:
-                        raise ValueError(
-                                'Bad compression %s' % compression)
+                if 'encoding' in subelem.attrib: #needed to prevent errors if you load non-encoded stings or files
+                    encoding = subelem.attrib.pop('encoding')
+                    if encoding == 'base64':
+                        data = base64.b64decode(data)
+                        layer.encoding = 'base64'
+                    else:
+                        raise ValueError('Bad encoding %s' % encoding)
+                if 'compression' in subelem.attrib: #needed to prevent errors if you load non-compressed stings or files
+                    compression = subelem.attrib.pop('compression', None)
+                    if compression == 'gzip':
+                        filelike = io.BytesIO(data)
+                        gzfile = gzip.GzipFile(fileobj=filelike)
+                        data = gzfile.read()
+                        gzfile.close()
+                        layer.compression = 'gzip'
+                    elif compression == 'zlib':
+                        data = zlib.decompress(data)
+                        layer.compression = 'zlib'
+                    elif compression:
+                            raise ValueError(
+                                    'Bad compression %s' % compression)
                 else:
                     layer.compression = None
                 layer.data = array.array('L', [(
